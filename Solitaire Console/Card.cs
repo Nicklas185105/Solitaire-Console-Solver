@@ -78,6 +78,10 @@ namespace Solitaire_Console
         public bool CanNumberStack(Card onto) =>
             Array.IndexOf(Solitaire.values, onto.Value) == Array.IndexOf(Solitaire.values, Value) - 1;
 
+        // Using this for checking if the number can stack when looking for moves into stack
+        public bool CanNumberColorStack(Card onto) =>
+            Array.IndexOf(Solitaire.values, onto.Value) - 1 == Array.IndexOf(Solitaire.values, Value);
+
         // Making sure that you can only stack the same suit at the top
         public bool IsSameColor(Card onto) => onto.Suit == Suit;
     }

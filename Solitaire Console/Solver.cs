@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 
@@ -12,28 +13,38 @@ namespace Solitaire_Console
 
         List<string> moves = new List<string>();
         List<string> temp = new List<string>();
+        List<int> score = new List<int>();
+        List<string> downcard = new List<string>();
+        List<string> deckCard = new List<string>();
 
         public Solver(Solitaire solitaire, Card deck, List<Card>[] colorStacks, List<Card>[] stacks)
         {
             // Always move aces and deuces no matter what
-            MovingAcesAndDeuces(solitaire, deck, colorStacks, stacks);
-            MovingLogik(solitaire, deck, stacks);
-            DowncardOrSmooth(solitaire);
+            MovingAcesAndDeuces(deck, colorStacks, stacks);
+            if (!moves.Any())
+            {
+                MovingLogik(deck, colorStacks, stacks);
+                foreach (string move in moves) score.Add(0);
+                DowncardOrSmooth(deck, stacks);
+            }
+            else foreach (string move in moves) score.Add(0);
             solitaire.debugMes = "";
-            if (moves.Count == 0)
+            if (!moves.Any())
             {
                 solitaire.debugMes = "n";
             }
             else
             {
+                int i = 0;
                 foreach(string move in moves)
                 {
-                    solitaire.debugMes += move + "\n";
+                    solitaire.debugMes += move + (score[i].Equals(score.Max()) ? " Best Move" : "") + "\n";
+                    i++;
                 }
             }
         }
 
-        void Switch(Solitaire solitaire, string card, string equal, List<Card>[] colorStacks, string suit, string command)
+        void Switch(string card, string equal, List<Card>[] colorStacks, string suit, string command)
         {
             if (card.Equals(equal))
             {
@@ -58,23 +69,23 @@ namespace Solitaire_Console
                 switch (suit)
                 {
                     case "H":
-                        solitaire.Move(command, "r");
+                        moves.Add(command + " r");
                         break;
                     case "D":
-                        solitaire.Move(command, "m");
+                        moves.Add(command + " m");
                         break;
                     case "C":
-                        solitaire.Move(command, "b");
+                        moves.Add(command + " b");
                         break;
                     case "S":
-                        solitaire.Move(command, "c");
+                        moves.Add(command + " c");
                         break;
                 }
             }
         }
 
         // Done (Rule 1)
-        void MovingAcesAndDeuces(Solitaire solitaire, Card deck, List<Card>[] colorStacks, List<Card>[] stacks)
+        void MovingAcesAndDeuces(Card deck, List<Card>[] colorStacks, List<Card>[] stacks)
         {
             // Always play an Ace or Deuce wherever you can immediately.
             try{
@@ -85,12 +96,18 @@ namespace Solitaire_Console
                     if (stacks[s].Count != 0)
                     {
                         if (stacks[s].Last().Value.Equals("A"))
-                            Switch(solitaire, stacks[s].Last().Value, "A", colorStacks, stacks[s].Last().Suit, s.ToString());
+                        {
+                            Switch(stacks[s].Last().Value, "A", colorStacks, stacks[s].Last().Suit, s.ToString());
+                            return;
+                        }
                     }
                 }
                 // From the deck
                 if (deck.Value.Equals("A"))
-                    Switch(solitaire, deck.Value, "A", colorStacks, deck.Suit, "p");
+                {
+                    Switch(deck.Value, "A", colorStacks, deck.Suit, "p");
+                    return;
+                }
                 #endregion
                 #region Deuces
                 // From the stack
@@ -99,12 +116,18 @@ namespace Solitaire_Console
                     if (stacks[s].Count != 0)
                     {
                         if (stacks[s].Last().Value.Equals("2"))
-                            Switch(solitaire, stacks[s].Last().Value, "2", colorStacks, stacks[s].Last().Suit, s.ToString());
+                        {
+                            Switch(stacks[s].Last().Value, "2", colorStacks, stacks[s].Last().Suit, s.ToString());
+                            return;
+                        }
                     }
                 }
                 // From the deck
                 if (deck.Value.Equals("2"))
-                    Switch(solitaire, deck.Value, "2", colorStacks, deck.Suit, "p");
+                {
+                    Switch(deck.Value, "2", colorStacks, deck.Suit, "p");
+                    return;
+                }
                 #endregion
             }
             catch(Exception e)
@@ -114,7 +137,7 @@ namespace Solitaire_Console
         }
 
         // Done
-        void MovingLogik(Solitaire solitaire, Card deck, List<Card>[] stacks)
+        void MovingLogik(Card deck, List<Card>[] colorStacks, List<Card>[] stacks)
         {
             try
             {
@@ -131,6 +154,10 @@ namespace Solitaire_Console
                                 return;*/
                                 moves.Add("p" + s.ToString() + "0");
                             }
+                        }
+                        else if (deck.Value.Equals("K"))
+                        {
+                            moves.Add("p" + s.ToString() + "0");
                         }
                     }
                 }
@@ -170,6 +197,41 @@ namespace Solitaire_Console
                     }
                 }
                 #endregion
+                /*
+                #region Stack to color stack
+                for (int s = stacks.Length - 1; s >= 0; s--)
+                {
+                    if (stacks[s].Count != 0)
+                    {
+                        for (int i = colorStacks.Length - 1; i >= 0; i--)
+                        {
+                            if (colorStacks[i].Count != 0)
+                            {
+                                if (colorStacks[i].Last().Suit.Equals(stacks[s].Last().Suit) && colorStacks[i].Last().CanNumberColorStack(stacks[s].Last()))
+                                {
+                                    Switch(stacks[s].Last().Value, stacks[s].Last().Value, colorStacks, stacks[s].Last().Suit, s.ToString());
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #region deck to color stack
+                if (!deck.Value.Equals("P") && !deck.Suit.Equals("P"))
+                {
+                    for (int s = colorStacks.Length - 1; s >= 0; s--)
+                    {
+                        if (colorStacks[s].Count != 0)
+                        {
+                            if (colorStacks[s].Last().Suit.Equals(deck.Suit) && colorStacks[s].Last().CanNumberColorStack(deck))
+                            {
+                                Switch(deck.Value, deck.Value, colorStacks, deck.Suit, "p");
+                            }
+                        }
+                    }
+                }
+                #endregion
+                */
             }
             catch (Exception e)
             {
@@ -177,26 +239,60 @@ namespace Solitaire_Console
             }
         }
 
-        // (Rule 2, 3 and 4)
-        void DowncardOrSmooth(Solitaire solitaire)
+        // Done (Rule 2, 3 and 4)
+        void DowncardOrSmooth(Card deck, List<Card>[] stacks)
         {
-            // Always make the play or transfer that frees (or allows a play that frees) a downcard, regardless of any other considerations.
+            // Always make the play or transfer that frees (or allows a play that frees) a downcard, regardless of any other considerations. (Done)
             // When faced with a choice, always make the play or transfer that frees (or allows a play that frees) the downcard from the biggest pile of downcards. (Done)
             // Transfer cards from column to column only to allow a downcard to be freed or to make the columns smoother.
             try
             {
-                List<string> downcard = new List<string>();
                 foreach (string move in moves)
                 {
                     string[] args = move.Select(i => i.ToString()).Where(i => !string.IsNullOrWhiteSpace(i)).ToArray();
                     temp.Add(args[0] + " " + args[1]);
+                    if (args[0].Equals("p")) deckCard.Add(args[1]);
+                    else deckCard.Add("");
                     downcard.Add(args[2]);
                 }
                 moves.Clear();
 
+                // Make it look for if you move down the card from the deck, if it's possible to move another card on top that has a high number of covered cards.
+                // The move this function will find is only if the there isen't a card on the table with the same number and color, that has atleast one covered card.
+                // Example where the move of this function will be invalid: https://gyazo.com/3e8b50197c4f09ccb96d6969fb09f4ad
+                if (deckCard.Any() || deck.Value.Equals("K"))
+                {
+                    int i = 0;
+                    bool deckCardMatch = false;
+                    foreach (List<Card> stack in stacks)
+                    {
+                        int n = stack.Count - 1;
+                        if (n > 0)
+                        {
+                            while (stack[n - 1].Uncovered)
+                            {
+                                n--;
+                                if (n == 0) break;
+                            }
+                        }
+                        if (stack.Count != 0)
+                        {
+                            if (deck.Value.Equals(stack[n].Value) && !deck.CanColorStack(stack[n]) && n > 0) deckCardMatch = true;
+                            if (deck.CanColorStack(stack[n]) && deck.CanNumberStack(stack[n]))
+                            {
+                                temp.Add(i.ToString() + " p");
+                                downcard.Add(n.ToString());
+                            }
+                        }
+                        i++;
+                    }
+                    if (deckCardMatch) temp.Remove(temp.Last());
+                }
+
                 for (int i = 0; i < downcard.Count; i++)
                 {
-                    moves.Add(temp[i] + (downcard[i].Equals(downcard.Max()) ? " Best Move" : ""));
+                    moves.Add(temp[i]);
+                    score[i] += (downcard[i].Equals(downcard.Max()) ? 1 : 0);
                 }
                 temp.Clear();
             }
@@ -210,10 +306,24 @@ namespace Solitaire_Console
         void KingMovement(Solitaire solitaire, Card deck, List<Card>[] colorStacks, List<Card>[] stacks)
         {
             // Don't clear a spot unless there's a King IMMEDIATELY waiting to occupy it.
-            // Only play a King that will benefit the column(s) with the biggest pile of downcards, unless the play of another King will at least allow a transfer that frees a downcard.
+            // Only play a King that will benefit the column(s) with the biggest pile of downcards, 
+            // unless the play of another King will at least allow a transfer that frees a downcard.
             try
             {
+                /* Look for if a move has 0 over it, if true, then look for a king and give give 0 points.
+                 * If false give -1 point.
+                 * If from deck then don't do the check */
 
+                int n = 0;
+                foreach (string downcard in downcard)
+                {
+                    if (downcard.Equals("0") && deckCard[n].Equals(""))
+                    {
+
+                    }
+                        
+                    n++;
+                }
             }
             catch(Exception e)
             {
