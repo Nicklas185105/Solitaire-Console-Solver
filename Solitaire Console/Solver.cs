@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+===============================
+ AUTHOR: Nicklas Beyer Lydersen (S185105)
+ CREATE DATE: 01/06/2020
+ PURPOSE: This class is the solver of a solitaire game.
+ SPECIAL NOTES: 
+===============================
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -34,12 +43,14 @@ namespace Solitaire_Console
             if (!moves.Any())
             {
                 // Start out with finding every possible move
-                MovingLogik(deck, colorStacks, stacks);
+                //MovingLogik(deck, colorStacks, stacks);
                 // Adding a score of 0 to all moves found
-                foreach (string move in moves) score.Add(0);
+                //foreach (string move in moves) score.Add(0);
                 // Going through the different logics and adding score
-                DowncardOrSmooth(deck, stacks);
-                KingMovement(deck, stacks);
+                //DowncardOrSmooth(deck, stacks);
+                //KingMovement(deck, stacks);
+
+                BuildAceStack(deck, colorStacks, stacks); // Should probably run as the last check
             }
             else foreach (string move in moves) score.Add(0);
             // Resseting the text field.
@@ -55,7 +66,7 @@ namespace Solitaire_Console
                 int i = 0;
                 foreach(string move in moves)
                 {
-                    solitaire.debugMes += move + (score[i].Equals(score.Max()) ? " Best Move" : "") + "\n";
+                    solitaire.debugMes += move + (score[i].Equals(score.Max()) && score[i] >= 0 ? " Best Move" : "") + "\n";
                     i++;
                 }
             }
@@ -473,7 +484,35 @@ namespace Solitaire_Console
         {
             try
             {
+                // Only do this check if there is currently no moves
+                if (moves.Any()) return;
 
+                foreach(List<Card> stack in stacks)
+                {
+                    int n = stack.Count - 1;
+                    if (n > 0)
+                    {
+                        while (stack[n - 1].Uncovered)
+                        {
+                            n--;
+                            if (n == 0) break;
+                        }
+                    }
+
+                    int stackCardSuit = stack[n].Suit.Equals("C") ? 0 : stack[n].Suit.Equals("D") ? 1 : stack[n].Suit.Equals("H") ? 2 : stack[n].Suit.Equals("S") ? 3 : 4;
+
+                    if(stackCardSuit == 4)
+                    {
+                        moves.Add("Suit Error");
+                        score.Add(-10);
+                        return;
+                    }
+
+                    if (colorStacks[stackCardSuit].Last().CanNumberStack(stack[n]))
+                    {
+
+                    }
+                }
             }
             catch (Exception e)
             {
