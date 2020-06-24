@@ -74,7 +74,9 @@ namespace Solitaire_Console
             }
 
             // Making sure the game runs until closed
-            
+
+            S();
+
             Loop();
 
             Console.WriteLine();
@@ -111,7 +113,7 @@ namespace Solitaire_Console
             Console.SetCursorPosition(0, Console.WindowHeight - 2);
             Console.Write(": ");
 
-            debugMes = "";
+            //debugMes = "";
             input = "";
 
             if (overrideInput != string.Empty)
@@ -668,19 +670,29 @@ namespace Solitaire_Console
 
             while (!Stacks.All(i => i.All(j => j.Uncovered)))
             {
+                debugMes = (Program.Wins + Program.Lost).ToString();
+                if (!Deck.Any())
+                {
+                    debugMes = (Program.Wins + Program.Lost).ToString();
+                    Program.Lost++;
+                    R();
+                    return;
+                }
                 if (CurrentDeckIndex < 0) continue;
                 if (nValue > 15)
                 {
+                    debugMes = (Program.Wins + Program.Lost).ToString();
                     Program.Lost++;
                     R();
                     return;
                 }
 
-                debugMes = "Analyzing for best move";
                 new Solver(this, Deck.Any() ? Deck[CurrentDeckIndex] : new Card("P", "P"), ColorStacks, Stacks, ref nValue);
 
+                System.Threading.Thread.Sleep(50);
             }
 
+            debugMes = (Program.Wins + Program.Lost).ToString();
             Program.Wins++;
             R();
             return;

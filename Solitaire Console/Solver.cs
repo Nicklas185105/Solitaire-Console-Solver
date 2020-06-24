@@ -100,6 +100,7 @@ namespace Solitaire_Console
                     break;
             }
 
+            solitaire.debugMes = (Program.Wins + Program.Lost).ToString();
             solitaire.Write();
             //solitaire.Prompt(cmd);
         }

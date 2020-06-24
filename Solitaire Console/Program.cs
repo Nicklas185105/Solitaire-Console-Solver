@@ -15,8 +15,10 @@ namespace Solitaire_Console
         {
             while (Restart)
             {
-                if (Wins + Lost >= 5)
+                if (Wins + Lost >= 500)
                     break;
+
+                System.Threading.Thread.Sleep(1000);
 
                 Restart = false;
                 new Solitaire();
