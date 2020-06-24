@@ -43,12 +43,12 @@ namespace Solitaire_Console
             if (!moves.Any())
             {
                 // Start out with finding every possible move
-                //MovingLogik(deck, colorStacks, stacks);
+                MovingLogik(deck, colorStacks, stacks);
                 // Adding a score of 0 to all moves found
-                //foreach (string move in moves) score.Add(0);
+                foreach (string move in moves) score.Add(0);
                 // Going through the different logics and adding score
-                //DowncardOrSmooth(deck, stacks);
-                //KingMovement(deck, stacks);
+                DowncardOrSmooth(deck, stacks);
+                KingMovement(deck, stacks);
 
                 BuildAceStack(deck, colorStacks, stacks); // Should probably run as the last check
             }
@@ -487,19 +487,11 @@ namespace Solitaire_Console
                 // Only do this check if there is currently no moves
                 if (moves.Any()) return;
 
+                // Stacks to Color Stacks
+                int n = 0;
                 foreach(List<Card> stack in stacks)
                 {
-                    int n = stack.Count - 1;
-                    if (n > 0)
-                    {
-                        while (stack[n - 1].Uncovered)
-                        {
-                            n--;
-                            if (n == 0) break;
-                        }
-                    }
-
-                    int stackCardSuit = stack[n].Suit.Equals("C") ? 0 : stack[n].Suit.Equals("D") ? 1 : stack[n].Suit.Equals("H") ? 2 : stack[n].Suit.Equals("S") ? 3 : 4;
+                    int stackCardSuit = stack.Last().Suit.Equals("H") ? 0 : stack.Last().Suit.Equals("D") ? 1 : stack.Last().Suit.Equals("C") ? 2 : stack.Last().Suit.Equals("S") ? 3 : 4;
 
                     if(stackCardSuit == 4)
                     {
@@ -508,11 +500,31 @@ namespace Solitaire_Console
                         return;
                     }
 
-                    if (colorStacks[stackCardSuit].Last().CanNumberStack(stack[n]))
+                    if (stack.Last().CanNumberStack(colorStacks[stackCardSuit].Last()) && colorStacks[stackCardSuit].Any())
                     {
-
+                        moves.Add(n.ToString() + " " + (stackCardSuit.Equals(0) ? "r" : stackCardSuit.Equals(1) ? "m" : stackCardSuit.Equals(2) ? "b" : "c"));
+                        score.Add(1);
                     }
+
+                    n++;
                 }
+
+                // Deck to Color Stacks
+                int deckCardSuit = deck.Suit.Equals("H") ? 0 : deck.Suit.Equals("D") ? 1 : deck.Suit.Equals("C") ? 2 : deck.Suit.Equals("S") ? 3 : 4;
+
+                if (deckCardSuit == 4)
+                {
+                    moves.Add("Suit Error");
+                    score.Add(-10);
+                    return;
+                }
+
+                if (deck.CanNumberStack(colorStacks[deckCardSuit].Last()) && colorStacks[deckCardSuit].Any())
+                {
+                    moves.Add("p " + (deckCardSuit.Equals(0) ? "r" : deckCardSuit.Equals(1) ? "m" : deckCardSuit.Equals(2) ? "b" : "c"));
+                    score.Add(1);
+                }
+
             }
             catch (Exception e)
             {
