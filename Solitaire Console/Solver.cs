@@ -27,6 +27,8 @@ namespace Solitaire_Console
         List<string> downcard = new List<string>();
         List<string> deckCard = new List<string>();
 
+        private Solitaire solitaire;
+
         /// <summary>
         /// The constructor, that makes sure we are going through everything in the correct order.
         /// </summary>
@@ -34,8 +36,10 @@ namespace Solitaire_Console
         /// <param name="deck">This is for getting the card from the deck</param>
         /// <param name="colorStacks">This is for getting the cards in the colorStacks. There are 4 lists in this list.</param>
         /// <param name="stacks">This is for getting the card there is in the main stacks. There are 7 lists in this list.</param>
-        public Solver(Solitaire solitaire, Card deck, List<Card>[] colorStacks, List<Card>[] stacks)
+        public Solver(Solitaire solitaire, Card deck, List<Card>[] colorStacks, List<Card>[] stacks, ref int nValue)
         {
+            this.solitaire = solitaire;
+
             // Always move aces and deuces no matter what - Calling that logic before anything else.
             MovingAcesAndDeuces(deck, colorStacks, stacks);
             // If there was no moves from before, go through the other logics.
@@ -43,12 +47,12 @@ namespace Solitaire_Console
             if (!moves.Any())
             {
                 // Start out with finding every possible move
-                //MovingLogik(deck, colorStacks, stacks);
+                MovingLogik(deck, colorStacks, stacks);
                 // Adding a score of 0 to all moves found
-                //foreach (string move in moves) score.Add(0);
+                foreach (string move in moves) score.Add(0);
                 // Going through the different logics and adding score
-                //DowncardOrSmooth(deck, stacks);
-                //KingMovement(deck, stacks);
+                DowncardOrSmooth(deck, stacks);
+                KingMovement(deck, stacks);
 
                 BuildAceStack(deck, colorStacks, stacks); // Should probably run as the last check
             }
@@ -58,7 +62,8 @@ namespace Solitaire_Console
             // If there was no moves found at all, take the next card in the deck.
             if (!moves.Any())
             {
-                solitaire.debugMes = "n";
+                SendCommand("n");
+                nValue++;
             }
             else
             {
@@ -66,12 +71,37 @@ namespace Solitaire_Console
                 int i = 0;
                 foreach(string move in moves)
                 {
-                    solitaire.debugMes += move + (score[i].Equals(score.Max()) && score[i] >= 0 ? " Best Move" : "") + "\n";
+                    if (score[i].Equals(score.Max()) && score[i] >= 0 ? true : false)
+                    {
+                        SendCommand("m " + move);
+                    }
+                    //solitaire.debugMes = move + (score[i].Equals(score.Max()) && score[i] >= 0 ? "Best Move" : "") + "\n";
                     i++;
                 }
+                nValue = 0;
             }
 
             // The class is getting reset automatic because when we are calling the class we are calling it with "new" tag.
+        }
+
+        private void SendCommand(string cmd)
+        {
+            string[] args = cmd.Split(' ');
+
+            switch (args[0])
+            {
+                case "m":
+                    solitaire.M(args);
+                    break;
+                case "n":
+                    solitaire.N();
+                    break;
+                default:
+                    break;
+            }
+
+            solitaire.Write();
+            //solitaire.Prompt(cmd);
         }
 
         /// <summary>
@@ -340,7 +370,7 @@ namespace Solitaire_Console
                 // Make it look for if you move down the card from the deck, if it's possible to move another card on top that has a high number of covered cards.
                 // The move this function will find is only if the there isen't a card on the table with the same number and color, that has atleast one covered card.
                 // Example where the move of this function will be invalid: https://gyazo.com/3e8b50197c4f09ccb96d6969fb09f4ad
-                if (deckCard.Any() || deck.Value.Equals("K"))
+                /*if (deckCard.Any() || deck.Value.Equals("K"))
                 {
                     int i = 0;
                     bool deckCardMatch = false;
@@ -372,7 +402,7 @@ namespace Solitaire_Console
                         first.Remove(first.Last());
                         second.Remove(second.Last());
                     }
-                }
+                }*/
 
                 // Here we add the moves from temp back to the moves list and add the downcard value as score to the score list.
                 for (int i = 0; i < downcard.Count; i++)
@@ -487,32 +517,44 @@ namespace Solitaire_Console
                 // Only do this check if there is currently no moves
                 if (moves.Any()) return;
 
-                foreach(List<Card> stack in stacks)
+                // Stacks to Color Stacks
+                int n = 0;
+                foreach (List<Card> stack in stacks)
                 {
-                    int n = stack.Count - 1;
-                    if (n > 0)
-                    {
-                        while (stack[n - 1].Uncovered)
-                        {
-                            n--;
-                            if (n == 0) break;
-                        }
-                    }
+                    int stackCardSuit = stack.Last().Suit.Equals("H") ? 0 : stack.Last().Suit.Equals("D") ? 1 : stack.Last().Suit.Equals("C") ? 2 : stack.Last().Suit.Equals("S") ? 3 : 4;
 
-                    int stackCardSuit = stack[n].Suit.Equals("C") ? 0 : stack[n].Suit.Equals("D") ? 1 : stack[n].Suit.Equals("H") ? 2 : stack[n].Suit.Equals("S") ? 3 : 4;
-
-                    if(stackCardSuit == 4)
+                    if (stackCardSuit == 4)
                     {
                         moves.Add("Suit Error");
                         score.Add(-10);
                         return;
                     }
 
-                    if (colorStacks[stackCardSuit].Last().CanNumberStack(stack[n]))
+                    if (stack.Last().CanNumberStack(colorStacks[stackCardSuit].Last()) && colorStacks[stackCardSuit].Any())
                     {
-
+                        moves.Add(n.ToString() + " " + (stackCardSuit.Equals(0) ? "r" : stackCardSuit.Equals(1) ? "m" : stackCardSuit.Equals(2) ? "b" : "c"));
+                        score.Add(1);
                     }
+
+                    n++;
                 }
+
+                // Deck to Color Stacks
+                int deckCardSuit = deck.Suit.Equals("H") ? 0 : deck.Suit.Equals("D") ? 1 : deck.Suit.Equals("C") ? 2 : deck.Suit.Equals("S") ? 3 : 4;
+
+                if (deckCardSuit == 4)
+                {
+                    moves.Add("Suit Error");
+                    score.Add(-10);
+                    return;
+                }
+
+                if (deck.CanNumberStack(colorStacks[deckCardSuit].Last()) && colorStacks[deckCardSuit].Any())
+                {
+                    moves.Add("p " + (deckCardSuit.Equals(0) ? "r" : deckCardSuit.Equals(1) ? "m" : deckCardSuit.Equals(2) ? "b" : "c"));
+                    score.Add(1);
+                }
+
             }
             catch (Exception e)
             {

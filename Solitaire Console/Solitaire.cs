@@ -19,7 +19,7 @@ namespace Solitaire_Console
             _ => throw new Exception("Somethings Wrong")
         };
 
-        List<Card> Deck;
+        public List<Card> Deck;
         List<Card>[] ColorStacks;
         List<Card>[] Stacks;
 
@@ -44,7 +44,8 @@ namespace Solitaire_Console
             List<Card> all = new List<Card>();
 
             // Placing all the cards inside the all list
-            foreach (string suit in suits){
+            foreach (string suit in suits)
+            {
                 all.AddRange(values.Select(i => new Card(i, suit)));
             }
 
@@ -73,6 +74,7 @@ namespace Solitaire_Console
             }
 
             // Making sure the game runs until closed
+            
             Loop();
 
             Console.WriteLine();
@@ -95,7 +97,7 @@ namespace Solitaire_Console
         string[] ColorStackPlacement = new string[] { "r", "m", "b", "c" };
         string input;
         string[] args;
-        void Prompt()
+        public void Prompt(string overrideInput = "")
         {
             if (Stacks.All(i => i.All(j => j.Uncovered)))
                 debugMes = "You Win!\n" + (string.IsNullOrWhiteSpace(debugMes) ? "" : (": " + debugMes));
@@ -112,37 +114,41 @@ namespace Solitaire_Console
             debugMes = "";
             input = "";
 
+            if (overrideInput != string.Empty)
+                input = overrideInput;
+
             if (!finishMode)
-                input = Console.ReadLine();
-            else
-            {
-                if (Stacks.All(i => !i.Any()) && !Deck.Any())
+                if (overrideInput == string.Empty)
+                    input = Console.ReadLine();
+                else
                 {
-                    finishMode = false;
-                    return;
-                }
-
-                currfinstack = (currfinstack + 1) % 9;
-                if (currfinstack < 7)
-                {
-                    if (!Stacks[currfinstack].Any())
+                    if (Stacks.All(i => !i.Any()) && !Deck.Any())
+                    {
+                        finishMode = false;
                         return;
+                    }
 
-                    input = "m";
-                    input += currfinstack.ToString();
-                    input += ColorStackPlacement[ColorStackIndex(Stacks[currfinstack].Last().Suit)];
-                }
-                else if (currfinstack == 7)
-                    input = "n";
-                else if (currfinstack == 8)
-                {
-                    if (!Deck.Any())
-                        return;
+                    currfinstack = (currfinstack + 1) % 9;
+                    if (currfinstack < 7)
+                    {
+                        if (!Stacks[currfinstack].Any())
+                            return;
 
-                    input = "mp";
-                    input += ColorStackPlacement[ColorStackIndex(Deck[CurrentDeckIndex].Suit)];
+                        input = "m";
+                        input += currfinstack.ToString();
+                        input += ColorStackPlacement[ColorStackIndex(Stacks[currfinstack].Last().Suit)];
+                    }
+                    else if (currfinstack == 7)
+                        input = "n";
+                    else if (currfinstack == 8)
+                    {
+                        if (!Deck.Any())
+                            return;
+
+                        input = "mp";
+                        input += ColorStackPlacement[ColorStackIndex(Deck[CurrentDeckIndex].Suit)];
+                    }
                 }
-            }
 
             args = input.Select(i => i.ToString()).Where(i => !string.IsNullOrWhiteSpace(i)).ToArray();
             if (args.Length == 0)
@@ -213,8 +219,14 @@ namespace Solitaire_Console
             debugMes = "test";
             finishMode = true;
         }
-        void M()
+
+        public void M() { M(null); }
+
+        public void M(string[] argsoverride)
         {
+            if (argsoverride != null) args = argsoverride;
+
+
             if (args.Length < 3)
             {
                 debugMes = "Invalid Command";
@@ -265,7 +277,7 @@ namespace Solitaire_Console
 
                         if (loc1p.Item1 == "Deck")
                         {
-                            Deck.Remove(c1); 
+                            Deck.Remove(c1);
                             CurrentDeckIndex--;
                         }
                         return;
@@ -356,7 +368,7 @@ namespace Solitaire_Console
 
                     if (loc1p.Item1 == "Deck")
                     {
-                        Deck.Remove(c1); 
+                        Deck.Remove(c1);
                         CurrentDeckIndex--;
                     }
                     if (loc1p.Item1 == "ColorStacks")
@@ -478,7 +490,7 @@ namespace Solitaire_Console
 
                         if (loc1p.Item1 == "Deck")
                         {
-                            Deck.Remove(c1); 
+                            Deck.Remove(c1);
                             CurrentDeckIndex--;
                         }
                         return;
@@ -569,7 +581,7 @@ namespace Solitaire_Console
 
                     if (loc1p.Item1 == "Deck")
                     {
-                        Deck.Remove(c1); 
+                        Deck.Remove(c1);
                         CurrentDeckIndex--;
                     }
                     if (loc1p.Item1 == "ColorStacks")
@@ -652,12 +664,31 @@ namespace Solitaire_Console
         }
         public void S()
         {
-            debugMes = "Analyzing for best move";
-            new Solver(this, Deck.Any() ? Deck[CurrentDeckIndex] : new Card("P", "P"), ColorStacks, Stacks);
+            int nValue = 0;
+
+            while (!Stacks.All(i => i.All(j => j.Uncovered)))
+            {
+                if (CurrentDeckIndex < 0) continue;
+                if (nValue > 15)
+                {
+                    Program.Lost++;
+                    R();
+                    return;
+                }
+
+                debugMes = "Analyzing for best move";
+                new Solver(this, Deck.Any() ? Deck[CurrentDeckIndex] : new Card("P", "P"), ColorStacks, Stacks, ref nValue);
+
+            }
+
+            Program.Wins++;
+            R();
+            return;
+            
         }
-        
+
         // Printing the board
-        void Write()
+        public void Write()
         {
             Console.Clear();
             Console.ForegroundColor = ConsoleColor.White;
